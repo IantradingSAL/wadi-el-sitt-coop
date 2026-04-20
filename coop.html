@@ -346,6 +346,18 @@ footer a{color:rgba(255,255,255,.7)}
       <div class="fg"><div class="fl">نبذة عنك</div><textarea class="fi" id="r-bio" rows="2" style="resize:none"></textarea></div>
       <div class="err" id="r-err"></div>
       <button class="btn btn-blue" onclick="doRegister()" style="margin-top:13px">✅ إنشاء الحساب</button>
+    <div id="reg-credentials" style="display:none;background:var(--green3);border:1.5px solid var(--green);border-radius:12px;padding:14px;margin-top:12px;text-align:center">
+      <div style="font-size:13px;font-weight:800;color:var(--green2);margin-bottom:8px">✅ تم إنشاء حسابك! احفظ بيانات الدخول:</div>
+      <div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:6px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">اسم المستخدم</div>
+        <div style="font-size:16px;font-weight:900;color:var(--blue);direction:ltr" id="cred-user"></div>
+      </div>
+      <div style="background:#fff;border-radius:8px;padding:10px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">كلمة المرور (الافتراضية)</div>
+        <div style="font-size:16px;font-weight:900;color:var(--green2);direction:ltr" id="cred-pass"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px">سيتم تحويلك للوحة البائع خلال ثوانٍ…</div>
+    </div>
     </div>
     <button class="btn btn-o" onclick="showStore()" style="margin-top:8px">← العودة للمتجر</button>
   </div>
@@ -583,8 +595,8 @@ async function doRegister(){
   var fname=document.getElementById('r-fname').value.trim();
   var lname=document.getElementById('r-lname').value.trim();
   var name=(fname+' '+lname).trim();
-  // Auto-generate username from name + random suffix
-  var u=(fname+lname).toLowerCase().replace(/[^a-z0-9]/g,'')+Math.floor(Math.random()*900+100);
+  // Username = fname.lname (lowercase, dot separator)
+  var u=(fname.trim()+'.'+lname.trim()).toLowerCase();
   document.getElementById('r-user').value=u;
   var p=document.getElementById('r-pass').value;
   var phone=document.getElementById('r-phone').value.trim();
@@ -598,12 +610,19 @@ async function doRegister(){
   if(!p||p.length<6){errEl.textContent='كلمة المرور 6 أحرف على الأقل';return;}
   if(!phone){errEl.textContent='الهاتف مطلوب';return;}
   var chk=await sb.from('coop_sellers').select('id').eq('username',u).maybeSingle();
-  if(chk.data){errEl.textContent='اسم المستخدم مأخوذ';return;}
+  if(chk.data){u=u+Math.floor(Math.random()*90+10);document.getElementById('r-user').value=u;}  // add suffix if taken
   var h=await hashPass(p);
   var res=await sb.from('coop_sellers').insert([{username:u,password_hash:h,display_name:name,phone:phone,email:email||null,area:area||null,bio:bio||null,whatsapp:phone,status:'pending',balance:0}]).select().single();
   if(res.error){errEl.textContent='خطأ: '+res.error.message;return;}
   currentSeller=res.data;localStorage.setItem('coop_seller',JSON.stringify(currentSeller));
-  showDashboard();toast('تم إنشاء حسابك — ينتظر موافقة البلدية');
+  // Show credentials to user
+  var credBox=document.getElementById('reg-credentials');
+  if(credBox){
+    document.getElementById('cred-user').textContent=u;
+    document.getElementById('cred-pass').textContent=p;
+    credBox.style.display='block';
+  }
+  setTimeout(function(){showDashboard();toast('مرحباً! حسابك ينتظر موافقة البلدية');},2800);
 }
 function doLogout(){currentSeller=null;localStorage.removeItem('coop_seller');showStore();toast('تم تسجيل الخروج');}
 
@@ -1219,7 +1238,7 @@ async function saveNewAdmin(){
   if(!user||user.length<3){errEl.textContent='اسم المستخدم 3 أحرف على الأقل';return;}
   if(!pass||pass.length<6){errEl.textContent='كلمة المرور 6 أحرف على الأقل';return;}
   var chk=await sb.from('coop_admins').select('id').eq('username',user).maybeSingle();
-  if(chk.data){errEl.textContent='اسم المستخدم مأخوذ';return;}
+  if(chk.data){u=u+Math.floor(Math.random()*90+10);document.getElementById('r-user').value=u;}  // add suffix if taken
   var h=await hashPass(pass);
   var res=await sb.from('coop_admins').insert([{display_name:name,username:user,password_hash:h,role_id:roleId,is_super:false,is_active:true}]);
   if(res.error){errEl.textContent='خطأ: '+res.error.message;return;}
@@ -1383,8 +1402,7 @@ try{sb&&sb.storage.createBucket('coop-photos',{public:true});}catch(e){}
         <div style="font-size:42px;margin-bottom:8px">🔐</div>
         <p style="font-size:13px;color:var(--text3)">هذه البوابة للموظفين المخوّلين فقط</p>
       </div>
-      <div class="fg"><div class="fl">اسم المستخدم</div><input class="fi" id="admin-login-user" placeholder="username" style="direction:ltr"></div>
-      <div class="fg"><div class="fl">اسم المستخدم</div><input class="fi" id="admin-login-user" placeholder="username" style="direction:ltr"></div>
+      <div class="fg"><div class="fl">اسم المستخدم</div><input class="fi" id="admin-login-user" placeholder="username" style="direction:ltr" onkeydown="if(event.key==='Enter')document.getElementById('admin-pass').focus()"></div>
       <div class="fg"><div class="fl">كلمة المرور</div><input class="fi" id="admin-pass" type="password" placeholder="••••••••" style="direction:ltr" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
       <div class="err" id="admin-err"></div>
       <button class="btn btn-blue" onclick="doAdminLogin()" style="margin-top:12px">🔑 دخول</button>
