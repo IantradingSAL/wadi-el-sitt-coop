@@ -334,8 +334,11 @@ footer a{color:rgba(255,255,255,.7)}
       <button class="btn btn-blue" onclick="doLogin()" style="margin-top:13px">🔑 دخول</button>
     </div>
     <div id="tab-register" style="display:none">
-      <div class="fg"><div class="fl">الاسم الظاهر *</div><input class="fi" id="r-name" placeholder="فاطمة حسن"></div>
-      <div class="fg"><div class="fl">اسم المستخدم *</div><input class="fi" id="r-user" placeholder="fatima_hassan" style="direction:ltr" oninput="this.value=this.value.replace(/[^a-z0-9_]/gi,'').toLowerCase()"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><div class="fl">الاسم الأول *</div><input class="fi" id="r-fname" placeholder="فاطمة"></div>
+      <div class="fg"><div class="fl">اسم العائلة *</div><input class="fi" id="r-lname" placeholder="حسن"></div>
+    </div>
+      <div class="fg" style="display:none"><input class="fi" id="r-user" placeholder="auto" style="direction:ltr"></div>
       <div class="fg"><div class="fl">كلمة المرور *</div><input class="fi" id="r-pass" type="password" style="direction:ltr"></div>
       <div class="fg"><div class="fl">رقم الهاتف / واتساب *</div><input class="fi" id="r-phone" type="tel" placeholder="03xxxxxx" style="direction:ltr"></div>
       <div class="fg"><div class="fl">البريد (اختياري)</div><input class="fi" id="r-email" type="email" style="direction:ltr"></div>
@@ -527,16 +530,21 @@ async function doLogin(){
   showDashboard();
 }
 async function doRegister(){
-  var name=document.getElementById('r-name').value.trim();
-  var u=document.getElementById('r-user').value.trim();
+  var fname=document.getElementById('r-fname').value.trim();
+  var lname=document.getElementById('r-lname').value.trim();
+  var name=(fname+' '+lname).trim();
+  // Auto-generate username from name + random suffix
+  var u=(fname+lname).toLowerCase().replace(/[^a-z0-9]/g,'')+Math.floor(Math.random()*900+100);
+  document.getElementById('r-user').value=u;
   var p=document.getElementById('r-pass').value;
   var phone=document.getElementById('r-phone').value.trim();
   var email=document.getElementById('r-email').value.trim();
   var area=document.getElementById('r-area').value.trim();
   var bio=document.getElementById('r-bio').value.trim();
   var errEl=document.getElementById('r-err');errEl.textContent='';
-  if(!name){errEl.textContent='الاسم مطلوب';return;}
-  if(!u||u.length<3){errEl.textContent='اسم المستخدم 3 أحرف على الأقل';return;}
+  if(!fname){errEl.textContent='الاسم الأول مطلوب';return;}
+  if(!lname){errEl.textContent='اسم العائلة مطلوب';return;}
+
   if(!p||p.length<6){errEl.textContent='كلمة المرور 6 أحرف على الأقل';return;}
   if(!phone){errEl.textContent='الهاتف مطلوب';return;}
   var chk=await sb.from('coop_sellers').select('id').eq('username',u).maybeSingle();
