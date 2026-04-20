@@ -271,7 +271,7 @@ footer a{color:rgba(255,255,255,.7)}
   <div class="hdr-right">
     <button class="hbtn" id="btn-store" onclick="showStore()">🏪 المتجر</button>
     <button class="hbtn" id="btn-seller" onclick="showSellerSection()">👤 بائع</button>
-    <button class="hbtn" id="btn-admin" onclick="showAdmin()" style="display:none">⚙️ إدارة</button>
+    <button class="hbtn" id="btn-admin" onclick="checkAdminAccess()">⚙️ إدارة</button>
     <button class="cart-btn" onclick="openCart()" title="سلة التسوق">
       🛒<div class="cart-badge" id="cart-badge">0</div>
     </button>
@@ -335,8 +335,8 @@ footer a{color:rgba(255,255,255,.7)}
     </div>
     <div id="tab-register" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fg"><div class="fl">الاسم الأول *</div><input class="fi" id="r-fname" placeholder="فاطمة"></div>
-      <div class="fg"><div class="fl">اسم العائلة *</div><input class="fi" id="r-lname" placeholder="حسن"></div>
+      <div class="fg"><div class="fl">الاسم الأول *</div><input class="fi" id="r-fname" placeholder="اسمك الأول"></div>
+      <div class="fg"><div class="fl">اسم العائلة *</div><input class="fi" id="r-lname" placeholder="اسم عائلتك"></div>
     </div>
       <div class="fg" style="display:none"><input class="fi" id="r-user" placeholder="auto" style="direction:ltr"></div>
       <div class="fg"><div class="fl">كلمة المرور *</div><input class="fi" id="r-pass" type="password" style="direction:ltr"></div>
@@ -397,15 +397,65 @@ footer a{color:rgba(255,255,255,.7)}
 </div>
 
 <div id="view-admin">
-  <div class="admin-hd"><span style="font-size:32px">⚙️</span><div><div style="font-size:16px;font-weight:800">إدارة التعاونية</div><div style="font-size:12px;opacity:.65">موافقة البائعين وإدارة المنتجات</div></div></div>
+  <div class="admin-hd">
+    <span style="font-size:32px">⚙️</span>
+    <div><div style="font-size:16px;font-weight:800">إدارة التعاونية</div><div style="font-size:12px;opacity:.65" id="admin-role-label"></div></div>
+    <button onclick="adminLogout()" style="margin-right:auto;background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;border-radius:8px;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">خروج ←</button>
+  </div>
   <div class="dtabs">
-    <button class="dtab on" onclick="showAdminSec('sellers',this)">👥 البائعون</button>
-    <button class="dtab" onclick="showAdminSec('products',this)">📦 المنتجات</button>
-    <button class="dtab" onclick="showAdminSec('orders',this)">📋 الطلبات</button>
+    <button class="dtab on" data-sec="sellers"  onclick="showAdminSec('sellers',this)">👥 البائعون <span id="pending-badge" style="background:#ef4444;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;display:none"></span></button>
+    <button class="dtab" data-sec="products" onclick="showAdminSec('products',this)">📦 المنتجات</button>
+    <button class="dtab" data-sec="orders"   onclick="showAdminSec('orders',this)">📋 الطلبات</button>
+    <button class="dtab" data-sec="admins"   onclick="showAdminSec('admins',this)"  id="admin-tab-admins" style="display:none">👤 المديرون</button>
+    <button class="dtab" data-sec="roles"    onclick="showAdminSec('roles',this)"   id="admin-tab-roles"  style="display:none">🔑 الصلاحيات</button>
   </div>
   <div class="dsec on" id="admin-sec-sellers"><div id="admin-sellers-list"></div></div>
-  <div class="dsec" id="admin-sec-products"><div id="admin-products-list"></div></div>
-  <div class="dsec" id="admin-sec-orders"><div id="admin-orders-list"></div></div>
+  <div class="dsec"    id="admin-sec-products"><div id="admin-products-list"></div></div>
+  <div class="dsec"    id="admin-sec-orders"><div id="admin-orders-list"></div></div>
+  <div class="dsec"    id="admin-sec-admins">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="sec-ttl" style="margin:0">👤 إدارة الحسابات</div>
+      <button class="btn btn-blue btn-sm" onclick="openAddAdminModal()">➕ إضافة مدير</button>
+    </div>
+    <div id="admin-admins-list"></div>
+  </div>
+  <div class="dsec"    id="admin-sec-roles">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="sec-ttl" style="margin:0">🔑 الأدوار والصلاحيات</div>
+      <button class="btn btn-blue btn-sm" onclick="openAddRoleModal()">➕ دور جديد</button>
+    </div>
+    <div id="admin-roles-list"></div>
+  </div>
+</div>
+
+<!-- ADD ADMIN MODAL -->
+<div class="ov" id="add-admin-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd"><div class="modal-ttl">👤 مدير جديد</div><button class="modal-x" onclick="document.getElementById('add-admin-modal').classList.remove('open')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><div class="fl">الاسم الكامل *</div><input class="fi" id="na-name" placeholder="اسم المدير"></div>
+      <div class="fg"><div class="fl">اسم المستخدم *</div><input class="fi" id="na-user" placeholder="username" style="direction:ltr" oninput="this.value=this.value.replace(/[^a-z0-9_]/gi,'').toLowerCase()"></div>
+      <div class="fg"><div class="fl">كلمة المرور *</div><input class="fi" id="na-pass" type="password" style="direction:ltr"></div>
+      <div class="fg"><div class="fl">الدور</div><select class="fi" id="na-role"></select></div>
+      <div class="err" id="na-err"></div>
+      <button class="btn btn-blue" onclick="saveNewAdmin()" style="margin-top:12px">✅ حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE MODAL -->
+<div class="ov" id="role-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd"><div class="modal-ttl" id="role-modal-ttl">🔑 دور جديد</div><button class="modal-x" onclick="document.getElementById('role-modal').classList.remove('open')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><div class="fl">اسم الدور *</div><input class="fi" id="rm-name" placeholder="مشرف الطلبات"></div>
+      <div class="sec-ttl" style="margin:14px 0 10px">الصلاحيات</div>
+      <div id="rm-perms" style="display:grid;gap:9px"></div>
+      <input type="hidden" id="rm-id">
+      <div class="err" id="rm-err"></div>
+      <button class="btn btn-blue" onclick="saveRole()" style="margin-top:14px">💾 حفظ الدور</button>
+    </div>
+  </div>
 </div>
 
 <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
@@ -502,7 +552,7 @@ function showView(v){
 }
 function showStore(){showView('view-store');document.getElementById('btn-store').classList.add('hi');}
 function showSellerSection(){if(currentSeller)showDashboard();else{showView('view-auth');document.getElementById('btn-seller').classList.add('hi');}}
-function showAdmin(){showView('view-admin');loadAdminData();}
+function showAdmin(){showView('view-admin');document.getElementById('btn-admin').classList.add('hi');loadAdminData();}
 
 // ── HASH
 async function hashPass(p){
@@ -571,8 +621,7 @@ function showDashboard(){
   document.getElementById('prof-wa').value=S.whatsapp||S.phone||'';
   document.getElementById('prof-area').value=S.area||'';
   document.getElementById('prof-bio').value=S.bio||'';
-  var mr=localStorage.getItem('userRole');
-  if(mr==='mayor'||mr==='admin')document.getElementById('btn-admin').style.display='flex';
+
 }
 function showDSec(s,el){
   document.querySelectorAll('#view-dashboard .dtabs .dtab').forEach(function(t){t.classList.remove('on');});
@@ -1041,69 +1090,204 @@ function showAdminSec(s,el){
   if(el)el.classList.add('on');
   document.querySelectorAll('#view-admin .dsec').forEach(function(d){d.classList.remove('on');});
   var sec=document.getElementById('admin-sec-'+s);if(sec)sec.classList.add('on');
+  if(s==='admins')loadAdminAccounts();
+  if(s==='roles')loadRoles();
 }
+var currentAdmin=null;
+var PERM_LABELS={approve_sellers:'موافقة على البائعين',cancel_orders:'إلغاء الطلبات',delete_products:'حذف المنتجات',deactivate_sellers:'تعليق حسابات البائعين',manage_admins:'إدارة حسابات المديرين',view_reports:'عرض التقارير'};
+function hasPerm(p){return currentAdmin&&(currentAdmin.is_super||(currentAdmin.permissions&&currentAdmin.permissions[p]));}
 async function loadAdminData(){
+  var ta=document.getElementById('admin-tab-admins');var tr=document.getElementById('admin-tab-roles');
+  if(ta)ta.style.display=hasPerm('manage_admins')?'block':'none';
+  if(tr)tr.style.display=hasPerm('manage_admins')?'block':'none';
+  var rl=document.getElementById('admin-role-label');
+  if(rl&&currentAdmin)rl.textContent=currentAdmin.is_super?'⭐ مدير عام':'👤 '+(currentAdmin.role_name||'مدير');
+  // Sellers
   var sRes=await sb.from('coop_sellers').select('*').order('created_at',{ascending:false});
   var sellers=sRes.data||[];
+  var pendingCount=sellers.filter(function(s){return s.status==='pending';}).length;
+  var pb=document.getElementById('pending-badge');if(pb){pb.textContent=pendingCount;pb.style.display=pendingCount>0?'inline':'none';}
   var sEl=document.getElementById('admin-sellers-list');sEl.innerHTML='';
   if(!sellers.length){sEl.innerHTML='<div class="empty-state"><div>👥</div><p>لا يوجد بائعون</p></div>';}
-  var sBadge={pending:'sb-p',approved:'sb-a',suspended:'sb-s'};
-  var sLbl2={pending:'ينتظر',approved:'معتمد',suspended:'موقوف'};
+  var sBadge={pending:'sb-p',approved:'sb-a',suspended:'sb-s'};var sLbl={pending:'ينتظر',approved:'معتمد',suspended:'موقوف'};
   sellers.forEach(function(s){
-    var card=document.createElement('div');card.className='scard';
+    var card=document.createElement('div');card.className='scard';if(s.status==='pending')card.style.borderColor='#f59e0b';
     var av=document.createElement('div');av.className='scard-av';av.textContent=(s.display_name||'؟')[0];card.appendChild(av);
-    var info=document.createElement('div');info.className='scard-info';
+    var inf=document.createElement('div');inf.className='scard-info';
     var nm=document.createElement('div');nm.className='scard-name';nm.textContent=s.display_name+' ';
-    var badge=document.createElement('span');badge.className='sbadge '+(sBadge[s.status]||'');badge.textContent=sLbl2[s.status]||s.status;nm.appendChild(badge);info.appendChild(nm);
-    var meta=document.createElement('div');meta.className='scard-meta';meta.textContent='@'+s.username+' · '+s.phone+(s.area?' · '+s.area:'');info.appendChild(meta);
-    var bal2=document.createElement('div');bal2.className='scard-meta';bal2.textContent='رصيد: '+Number(s.balance||0).toLocaleString('ar')+' ل.ل.';info.appendChild(bal2);
-    card.appendChild(info);
+    var bdg=document.createElement('span');bdg.className='sbadge '+(sBadge[s.status]||'');bdg.textContent=sLbl[s.status]||s.status;nm.appendChild(bdg);inf.appendChild(nm);
+    var meta=document.createElement('div');meta.className='scard-meta';meta.textContent=s.phone+(s.area?' · '+s.area:'');inf.appendChild(meta);
+    var bal=document.createElement('div');bal.className='scard-meta';bal.textContent='رصيد: '+Number(s.balance||0).toLocaleString('ar')+' ل.ل.';inf.appendChild(bal);
+    card.appendChild(inf);
     var acts=document.createElement('div');acts.className='scard-acts';
-    if(s.status!=='approved'){var ab=document.createElement('button');ab.className='btn btn-green btn-sm';ab.textContent='✅ موافقة';(function(sid){ab.onclick=function(){adminAction(sid,'approved');};})(s.id);acts.appendChild(ab);}
-    if(s.status==='approved'){var sb2=document.createElement('button');sb2.className='btn btn-red btn-sm';sb2.textContent='🚫 وقف';(function(sid){sb2.onclick=function(){adminAction(sid,'suspended');};})(s.id);acts.appendChild(sb2);}
-    if(s.status==='suspended'){var rb=document.createElement('button');rb.className='btn btn-gold btn-sm';rb.textContent='↩ إعادة';(function(sid){rb.onclick=function(){adminAction(sid,'approved');};})(s.id);acts.appendChild(rb);}
+    if(s.status!=='approved'&&hasPerm('approve_sellers')){var ab=document.createElement('button');ab.className='btn btn-green btn-sm';ab.textContent='✅ موافقة';(function(sid){ab.onclick=function(){adminAction(sid,'approved');};})(s.id);acts.appendChild(ab);}
+    if(s.status==='approved'&&hasPerm('deactivate_sellers')){var sb2=document.createElement('button');sb2.className='btn btn-red btn-sm';sb2.textContent='🚫 وقف';(function(sid){sb2.onclick=function(){adminAction(sid,'suspended');};})(s.id);acts.appendChild(sb2);}
+    if(s.status==='suspended'&&hasPerm('deactivate_sellers')){var rb=document.createElement('button');rb.className='btn btn-gold btn-sm';rb.textContent='↩ إعادة';(function(sid){rb.onclick=function(){adminAction(sid,'approved');};})(s.id);acts.appendChild(rb);}
     card.appendChild(acts);sEl.appendChild(card);
   });
+  // Products
   var pRes=await sb.from('coop_products').select('*,coop_sellers(display_name)').order('created_at',{ascending:false});
   var prods=pRes.data||[];
   var pEl=document.getElementById('admin-products-list');pEl.innerHTML='';
   prods.forEach(function(p){
     var row=document.createElement('div');row.className='prow';
-    var icon2=catIcons[p.category_id]||'📦';
-    var img2=document.createElement('div');img2.className='prow-img';img2.textContent=icon2;row.appendChild(img2);
-    var info2=document.createElement('div');info2.className='prow-info';
-    var nm2=document.createElement('div');nm2.className='prow-name';nm2.textContent=p.name;info2.appendChild(nm2);
-    var meta2=document.createElement('div');meta2.className='prow-meta';meta2.textContent=Number(p.price||0).toLocaleString('ar')+' ل.ل. · '+(p.coop_sellers&&p.coop_sellers.display_name||'—');info2.appendChild(meta2);
-    row.appendChild(info2);
-    var del3=document.createElement('button');del3.className='ibt del';del3.textContent='🗑';(function(pid){del3.onclick=function(){adminDeleteProduct(pid);};})(p.id);row.appendChild(del3);
+    var icon=catIcons[p.category_id]||'📦';
+    var imgD=document.createElement('div');imgD.className='prow-img';imgD.textContent=icon;row.appendChild(imgD);
+    var inf=document.createElement('div');inf.className='prow-info';
+    var n=document.createElement('div');n.className='prow-name';n.textContent=p.name;inf.appendChild(n);
+    var m=document.createElement('div');m.className='prow-meta';m.textContent=Number(p.price||0).toLocaleString('ar')+' ل.ل. · '+(p.coop_sellers&&p.coop_sellers.display_name||'—');inf.appendChild(m);
+    row.appendChild(inf);
+    if(hasPerm('delete_products')){var d=document.createElement('button');d.className='ibt del';d.textContent='🗑';(function(pid){d.onclick=function(){adminDeleteProduct(pid);};})(p.id);row.appendChild(d);}
     pEl.appendChild(row);
   });
+  // Orders
   var oRes=await sb.from('coop_orders').select('*,coop_products(name),coop_sellers(display_name)').order('created_at',{ascending:false}).limit(50);
-  var orders2=oRes.data||[];
+  var orders=oRes.data||[];
   var oEl=document.getElementById('admin-orders-list');oEl.innerHTML='';
-  if(!orders2.length){oEl.innerHTML='<div class="empty-state"><div>📋</div><p>لا طلبات</p></div>';}
   var oSMap={pending:'os-p',confirmed:'os-c',delivered:'os-d',cancelled:'os-x'};
   var oLbl={pending:'انتظار',confirmed:'مؤكد',delivered:'تم',cancelled:'ملغى'};
-  orders2.forEach(function(o){
-    var row2=document.createElement('div');row2.className='orow';
-    var hd2=document.createElement('div');hd2.className='orow-hd';
-    var num2=document.createElement('div');num2.className='orow-num';num2.textContent='#'+o.id.slice(-6).toUpperCase();hd2.appendChild(num2);
-    var st2=document.createElement('span');st2.className='ost '+(oSMap[o.status]||'');st2.textContent=oLbl[o.status]||o.status;hd2.appendChild(st2);
-    row2.appendChild(hd2);
-    var d5=document.createElement('div');d5.className='orow-d';d5.textContent=((o.coop_products&&o.coop_products.name)||'—')+' → '+((o.coop_sellers&&o.coop_sellers.display_name)||'—');row2.appendChild(d5);
-    var d6=document.createElement('div');d6.className='orow-d';d6.textContent=o.buyer_name+' · '+o.buyer_phone;row2.appendChild(d6);
-    var tot2=document.createElement('div');tot2.className='orow-total';tot2.textContent=Number(o.total_price||0).toLocaleString('ar')+' ل.ل.';row2.appendChild(tot2);
-    oEl.appendChild(row2);
+  orders.forEach(function(o){
+    var row=document.createElement('div');row.className='orow';
+    var hd=document.createElement('div');hd.className='orow-hd';
+    var num=document.createElement('div');num.className='orow-num';num.textContent='#'+o.id.slice(-6).toUpperCase();hd.appendChild(num);
+    var st=document.createElement('span');st.className='ost '+(oSMap[o.status]||'');st.textContent=oLbl[o.status]||o.status;hd.appendChild(st);
+    row.appendChild(hd);
+    var d1=document.createElement('div');d1.className='orow-d';d1.textContent=((o.coop_products&&o.coop_products.name)||'—')+' → '+((o.coop_sellers&&o.coop_sellers.display_name)||'—');row.appendChild(d1);
+    var d2=document.createElement('div');d2.className='orow-d';d2.textContent=o.buyer_name+' · '+o.buyer_phone;row.appendChild(d2);
+    var tot=document.createElement('div');tot.className='orow-total';tot.textContent=Number(o.total_price||0).toLocaleString('ar')+' ل.ل.';row.appendChild(tot);
+    if(hasPerm('cancel_orders')&&o.status==='pending'){
+      var ca=document.createElement('button');ca.className='btn btn-red btn-sm';ca.style.marginTop='7px';ca.textContent='إلغاء الطلب';
+      (function(oid){ca.onclick=function(){adminCancelOrder(oid);};})(o.id);row.appendChild(ca);
+    }
+    oEl.appendChild(row);
   });
 }
 async function adminAction(id,status){
   await sb.from('coop_sellers').update({status:status}).eq('id',id);
-  loadAdminData();toast({approved:'تمت الموافقة',suspended:'تم الوقف'}[status]||'تم');
+  loadAdminData();toast({approved:'✅ تمت الموافقة',suspended:'🚫 تم التعليق'}[status]||'تم');
 }
 async function adminDeleteProduct(id){
   if(!confirm('حذف؟'))return;
   await sb.from('coop_products').delete().eq('id',id);
   loadAdminData();toast('تم الحذف');
+}
+async function adminCancelOrder(id){
+  await sb.from('coop_orders').update({status:'cancelled'}).eq('id',id);
+  loadAdminData();toast('تم إلغاء الطلب');
+}
+// Admin accounts
+async function loadAdminAccounts(){
+  var res=await sb.from('coop_admins').select('*,coop_roles(name)').order('created_at',{ascending:false});
+  var admins=res.data||[];
+  var el=document.getElementById('admin-admins-list');el.innerHTML='';
+  admins.forEach(function(a){
+    var card=document.createElement('div');card.className='scard';if(!a.is_active)card.style.opacity='0.55';
+    var av=document.createElement('div');av.className='scard-av';av.textContent=(a.display_name||'؟')[0];card.appendChild(av);
+    var inf=document.createElement('div');inf.className='scard-info';
+    var nm=document.createElement('div');nm.className='scard-name';nm.textContent=a.display_name+' ';
+    if(a.is_super){var sp=document.createElement('span');sp.className='sbadge sb-a';sp.textContent='⭐ مدير عام';nm.appendChild(sp);}
+    else if(!a.is_active){var sp2=document.createElement('span');sp2.className='sbadge sb-s';sp2.textContent='معطّل';nm.appendChild(sp2);}
+    inf.appendChild(nm);
+    var meta=document.createElement('div');meta.className='scard-meta';meta.textContent='@'+a.username+' · '+(a.coop_roles&&a.coop_roles.name||'—');inf.appendChild(meta);
+    card.appendChild(inf);
+    if(!a.is_super&&currentAdmin&&currentAdmin.is_super){
+      var acts=document.createElement('div');acts.className='scard-acts';
+      var tog=document.createElement('button');tog.className='btn '+(a.is_active?'btn-red':'btn-green')+' btn-sm';
+      tog.textContent=a.is_active?'🚫 تعطيل':'✅ تفعيل';
+      (function(aid,active){tog.onclick=function(){toggleAdmin(aid,!active);};})(a.id,a.is_active);acts.appendChild(tog);
+      card.appendChild(acts);
+    }
+    el.appendChild(card);
+  });
+}
+async function openAddAdminModal(){
+  var rolesRes=await sb.from('coop_roles').select('*').eq('is_active',true).order('created_at');
+  var roles=rolesRes.data||[];
+  var sel=document.getElementById('na-role');sel.innerHTML='';
+  roles.forEach(function(r){var o=document.createElement('option');o.value=r.id;o.textContent=r.name;sel.appendChild(o);});
+  ['na-name','na-user','na-pass'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('na-err').textContent='';
+  document.getElementById('add-admin-modal').classList.add('open');
+}
+async function saveNewAdmin(){
+  var name=document.getElementById('na-name').value.trim();
+  var user=document.getElementById('na-user').value.trim();
+  var pass=document.getElementById('na-pass').value;
+  var roleId=document.getElementById('na-role').value;
+  var errEl=document.getElementById('na-err');errEl.textContent='';
+  if(!name){errEl.textContent='الاسم مطلوب';return;}
+  if(!user||user.length<3){errEl.textContent='اسم المستخدم 3 أحرف على الأقل';return;}
+  if(!pass||pass.length<6){errEl.textContent='كلمة المرور 6 أحرف على الأقل';return;}
+  var chk=await sb.from('coop_admins').select('id').eq('username',user).maybeSingle();
+  if(chk.data){errEl.textContent='اسم المستخدم مأخوذ';return;}
+  var h=await hashPass(pass);
+  var res=await sb.from('coop_admins').insert([{display_name:name,username:user,password_hash:h,role_id:roleId,is_super:false,is_active:true}]);
+  if(res.error){errEl.textContent='خطأ: '+res.error.message;return;}
+  document.getElementById('add-admin-modal').classList.remove('open');
+  loadAdminAccounts();toast('✅ تم إضافة المدير');
+}
+async function toggleAdmin(id,active){
+  await sb.from('coop_admins').update({is_active:active}).eq('id',id);
+  loadAdminAccounts();toast(active?'✅ تم التفعيل':'🚫 تم التعطيل');
+}
+// Roles
+async function loadRoles(){
+  var res=await sb.from('coop_roles').select('*').order('created_at');
+  var roles=res.data||[];
+  var el=document.getElementById('admin-roles-list');el.innerHTML='';
+  roles.forEach(function(r){
+    var card=document.createElement('div');card.className='scard';if(!r.is_active)card.style.opacity='0.55';
+    var inf=document.createElement('div');inf.className='scard-info';
+    var nm=document.createElement('div');nm.className='scard-name';nm.textContent=r.name;
+    if(!r.is_active){var sp=document.createElement('span');sp.className='sbadge sb-s';sp.textContent='معطّل';nm.appendChild(sp);}
+    inf.appendChild(nm);
+    var perms=r.permissions||{};
+    var active=Object.keys(perms).filter(function(k){return perms[k];}).map(function(k){return PERM_LABELS[k]||k;});
+    var meta=document.createElement('div');meta.className='scard-meta';meta.textContent=active.length?active.join(' · '):'لا صلاحيات';inf.appendChild(meta);
+    card.appendChild(inf);
+    var acts=document.createElement('div');acts.className='scard-acts';
+    var edit=document.createElement('button');edit.className='btn btn-blue btn-sm';edit.textContent='✏️ تعديل';
+    (function(role){edit.onclick=function(){openEditRoleModal(role);};})(r);acts.appendChild(edit);
+    if(!r.is_active){var re2=document.createElement('button');re2.className='btn btn-green btn-sm';re2.textContent='✅ تفعيل';(function(rid){re2.onclick=function(){toggleRole(rid,true);};})(r.id);acts.appendChild(re2);}
+    else{var de=document.createElement('button');de.className='btn btn-red btn-sm';de.textContent='🚫 تعطيل';(function(rid){de.onclick=function(){toggleRole(rid,false);};})(r.id);acts.appendChild(de);}
+    card.appendChild(acts);el.appendChild(card);
+  });
+}
+function openAddRoleModal(){
+  document.getElementById('rm-name').value='';document.getElementById('rm-id').value='';
+  document.getElementById('rm-err').textContent='';document.getElementById('role-modal-ttl').textContent='🔑 دور جديد';
+  buildPermCheckboxes({});document.getElementById('role-modal').classList.add('open');
+}
+function openEditRoleModal(role){
+  document.getElementById('rm-name').value=role.name;document.getElementById('rm-id').value=role.id;
+  document.getElementById('rm-err').textContent='';document.getElementById('role-modal-ttl').textContent='✏️ تعديل: '+role.name;
+  buildPermCheckboxes(role.permissions||{});document.getElementById('role-modal').classList.add('open');
+}
+function buildPermCheckboxes(current){
+  var container=document.getElementById('rm-perms');container.innerHTML='';
+  Object.keys(PERM_LABELS).forEach(function(key){
+    var row=document.createElement('label');
+    row.style.cssText='display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:13px;font-weight:600';
+    var cb=document.createElement('input');cb.type='checkbox';cb.id='perm-'+key;cb.checked=!!current[key];cb.style.accentColor='var(--blue)';cb.style.width='16px';cb.style.height='16px';
+    row.appendChild(cb);var lbl=document.createElement('span');lbl.textContent=PERM_LABELS[key];row.appendChild(lbl);
+    container.appendChild(row);
+  });
+}
+async function saveRole(){
+  var name=document.getElementById('rm-name').value.trim();
+  var id=document.getElementById('rm-id').value;
+  var errEl=document.getElementById('rm-err');errEl.textContent='';
+  if(!name){errEl.textContent='اسم الدور مطلوب';return;}
+  var perms={};Object.keys(PERM_LABELS).forEach(function(key){perms[key]=document.getElementById('perm-'+key).checked;});
+  var res;
+  if(id){res=await sb.from('coop_roles').update({name:name,permissions:perms}).eq('id',id);}
+  else{res=await sb.from('coop_roles').insert([{name:name,permissions:perms,is_active:true}]);}
+  if(res.error){errEl.textContent='خطأ: '+res.error.message;return;}
+  document.getElementById('role-modal').classList.remove('open');loadRoles();toast('✅ تم حفظ الدور');
+}
+async function toggleRole(id,active){
+  await sb.from('coop_roles').update({is_active:active}).eq('id',id);
+  loadRoles();toast(active?'✅ تم تفعيل الدور':'🚫 تم تعطيل الدور');
 }
 
 // ── TOAST
@@ -1133,8 +1317,80 @@ function openHelp(){
   el.style.display='flex';
 }
 
+
+// ── ADMIN AUTH
+const ADMIN_HASH='e3b2b63e2f9f8c3e1a4d2f5c8b7a9e0f1d3c6b4a8e2f7c9d5b1a3e6f8c2d4b0'; // placeholder, will be set
+var adminAuthenticated=false;
+
+async function getAdminHash(){
+  // hash of "wadi@2026"
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('wadi@2026'));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+
+function checkAdminAccess(){
+  var saved=sessionStorage.getItem('coop_admin');
+  if(saved){try{currentAdmin=JSON.parse(saved);adminAuthenticated=true;}catch(e){}}
+  if(adminAuthenticated&&currentAdmin){showAdmin();}
+  else{
+    document.getElementById('admin-login-user').value='';
+    document.getElementById('admin-pass').value='';
+    document.getElementById('admin-err').textContent='';
+    document.getElementById('admin-login-modal').classList.add('open');
+    setTimeout(function(){document.getElementById('admin-login-user').focus();},300);
+  }
+}
+
+async function doAdminLogin(){
+  var user=document.getElementById('admin-login-user').value.trim();
+  var pass=document.getElementById('admin-pass').value;
+  var errEl=document.getElementById('admin-err');errEl.textContent='';
+  if(!user){errEl.textContent='أدخل اسم المستخدم';return;}
+  if(!pass){errEl.textContent='أدخل كلمة المرور';return;}
+  var h=await hashPass(pass);
+  var res=await sb.from('coop_admins').select('*,coop_roles(name,permissions)').eq('username',user).eq('is_active',true).single();
+  if(res.error||!res.data){errEl.textContent='اسم المستخدم غير موجود أو الحساب معطّل';return;}
+  var admin=res.data;
+  if(admin.password_hash!==h){errEl.textContent='كلمة المرور غير صحيحة';return;}
+  currentAdmin={id:admin.id,name:admin.display_name,username:admin.username,is_super:admin.is_super,
+    role_name:admin.coop_roles&&admin.coop_roles.name||'',
+    permissions:admin.is_super
+      ?{approve_sellers:true,cancel_orders:true,delete_products:true,deactivate_sellers:true,manage_admins:true,view_reports:true}
+      :(admin.coop_roles&&admin.coop_roles.permissions||{})};
+  adminAuthenticated=true;
+  sessionStorage.setItem('coop_admin',JSON.stringify(currentAdmin));
+  await sb.from('coop_admins').update({last_login:new Date().toISOString()}).eq('id',admin.id);
+  document.getElementById('admin-login-modal').classList.remove('open');
+  showAdmin();toast('✅ مرحباً '+admin.display_name);
+}
+
+function adminLogout(){
+  adminAuthenticated=false;currentAdmin=null;
+  sessionStorage.removeItem('coop_admin');
+  showStore();toast('تم الخروج من الإدارة');
+}
+
 try{sb&&sb.storage.createBucket('coop-photos',{public:true});}catch(e){}
 
 </script>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="ov" id="admin-login-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hd"><div class="modal-ttl">⚙️ دخول الإدارة</div><button class="modal-x" onclick="document.getElementById('admin-login-modal').classList.remove('open')">✕</button></div>
+    <div class="modal-bd">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:42px;margin-bottom:8px">🔐</div>
+        <p style="font-size:13px;color:var(--text3)">هذه البوابة للموظفين المخوّلين فقط</p>
+      </div>
+      <div class="fg"><div class="fl">اسم المستخدم</div><input class="fi" id="admin-login-user" placeholder="username" style="direction:ltr"></div>
+      <div class="fg"><div class="fl">اسم المستخدم</div><input class="fi" id="admin-login-user" placeholder="username" style="direction:ltr"></div>
+      <div class="fg"><div class="fl">كلمة المرور</div><input class="fi" id="admin-pass" type="password" placeholder="••••••••" style="direction:ltr" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+      <div class="err" id="admin-err"></div>
+      <button class="btn btn-blue" onclick="doAdminLogin()" style="margin-top:12px">🔑 دخول</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
