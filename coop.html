@@ -311,6 +311,23 @@ footer a{color:rgba(255,255,255,.7)}
       <button class="ccat" data-cat="other">🎁 أخرى</button>
     </div>
   </div>
+  <!-- LIVE CART TOTAL BAR -->
+  <div id="cart-total-bar" style="display:none;padding:8px 16px 0;position:sticky;top:120px;z-index:180">
+    <div onclick="openCart()" style="background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;border-radius:14px;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:0 4px 16px rgba(15,77,130,.3)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🛒</span>
+        <div>
+          <div style="font-size:13px;font-weight:800" id="ctb-items"></div>
+          <div style="font-size:11px;opacity:.8">اضغط لإتمام الشراء</div>
+        </div>
+      </div>
+      <div style="text-align:left">
+        <div style="font-size:11px;opacity:.8">المجموع</div>
+        <div style="font-size:19px;font-weight:900" id="ctb-total"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="gsec">
     <div class="gsec-head">
       <div class="gsec-ttl" id="grid-ttl">جميع المنتجات</div>
@@ -499,7 +516,7 @@ footer a{color:rgba(255,255,255,.7)}
       <div class="ck-total"><div class="ck-total-lbl">المجموع</div><div class="ck-total-val" id="ck-total">0 ل.ل.</div></div>
       <div class="order-box">
         <div class="order-box-ttl">📝 بيانات التواصل</div>
-        <div class="fg"><div class="fl">اسمك الكامل *</div><input class="fi" id="ck-name" placeholder="أحمد علي"></div>
+        <div class="fg"><div class="fl">اسمك الكامل *</div><input class="fi" id="ck-name" placeholder="اسمك الكامل"></div>
         <div class="fg"><div class="fl">رقم هاتفك *</div><input class="fi" id="ck-phone" type="tel" placeholder="03xxxxxx" style="direction:ltr"></div>
         <div class="fg"><div class="fl">عنوانك (للتوصيل)</div><input class="fi" id="ck-addr" placeholder="المنطقة / الحي"></div>
         <div class="fg"><div class="fl">ملاحظات</div><input class="fi" id="ck-notes" placeholder="أي تفاصيل…"></div>
@@ -800,9 +817,17 @@ function quickWA(id){
 // ── CART
 function saveCart(){try{localStorage.setItem('coop_cart',JSON.stringify(cart));}catch(e){}}
 function updateCartBadge(){
-  var total=cart.reduce(function(s,c){return s+c.qty;},0);
+  var totalQty=cart.reduce(function(s,c){return s+c.qty;},0);
+  var totalPrice=cart.reduce(function(s,c){return s+c.price*c.qty;},0);
   var badge=document.getElementById('cart-badge');
-  if(badge){badge.textContent=total;badge.style.display=total>0?'flex':'none';}
+  if(badge){badge.textContent=totalQty;badge.style.display=totalQty>0?'flex':'none';}
+  // Live cart bar
+  var bar=document.getElementById('cart-total-bar');
+  var ctbItems=document.getElementById('ctb-items');
+  var ctbTotal=document.getElementById('ctb-total');
+  if(bar){bar.style.display=totalQty>0?'block':'none';}
+  if(ctbItems)ctbItems.textContent=totalQty+' '+(totalQty===1?'منتج':'منتجات')+' في السلة';
+  if(ctbTotal)ctbTotal.textContent=totalPrice.toLocaleString('ar')+' ل.ل.';
 }
 function addToCart(id){addToCartQty(id,1);}
 function addToCartQty(id,qty){
